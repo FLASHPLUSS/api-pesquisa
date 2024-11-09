@@ -8,7 +8,11 @@ app = Flask(__name__)
 def buscar_link_reproducao(titulo):
     try:
         # URL de pesquisa em tempo real
-        url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
+        url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo.strip()}"
+        
+        # Garantir que a URL esteja bem formada
+        url_pesquisa = url_pesquisa.replace(" ", "%20")  # Substituir espaços por %20
+        
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
@@ -18,9 +22,6 @@ def buscar_link_reproducao(titulo):
 
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
-
-        # Imprimir o conteúdo da resposta para depuração
-        print("Resposta da requisição:", response.text)  # Aqui vemos o conteúdo real da resposta
 
         # Usar BeautifulSoup para fazer o parsing do HTML
         soup = BeautifulSoup(response.text, 'html.parser')
