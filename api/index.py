@@ -36,7 +36,7 @@ def buscar_link_reproducao(titulo):
         if not link_pagina_filme:
             return None, None, "Filme específico não encontrado"
 
-        # Formar a URL completa da página do filme
+        # Formar a URL completa da página do filme, corrigindo a URL concatenada
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
         
         # Acessar a página do filme para obter o link do play
