@@ -7,64 +7,57 @@ app = Flask(__name__)
 
 def buscar_link_reproducao(titulo):
     try:
-        # URL de pesquisa com o parâmetro 'search'
+        # URL de pesquisa em tempo real
         url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        
-        # Faz a requisição de pesquisa
-        response = requests.get(url_pesquisa, headers=headers, timeout=10)
-        
+
+        # Faz a requisição de pesquisa em tempo real
+        response = requests.get(url_pesquisa, headers=headers)
+
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
-        # Usar BeautifulSoup para processar o HTML e procurar o link do filme
-        soup = BeautifulSoup(response.text, 'html.parser')
-        link_video = None
+        # A resposta é esperada como um JSON com a lista de filmes
+        filmes = response.json()
 
-        # Procurar pelo link de reprodução dentro do HTML
-        for link in soup.find_all('a', href=True):
-            if "/public/filme/" in link['href']:  # Encontra o link da página do filme
-                link_video = link['href']
-                break
-        
-        if not link_video:
+        if not filmes or 'id' not in filmes[0]:
             return None, "Filme não encontrado"
 
-        # Formar a URL completa do filme
-        link_video = f"https://wix.maxcine.top{link_video}"
+        # Extrair o ID do primeiro filme encontrado
+        id_filme = filmes[0]['id']
+        
+        # Formar a URL da página do filme
+        url_pagina_filme = f"https://wix.maxcine.top/public/filme/{id_filme}"
 
-        # Validar a URL para garantir que não tenha caracteres indesejados
-        link_video = link_video.strip()  # Remove espaços extras
-        link_video = link_video.replace('%20', ' ').replace('%0d%0a', '').replace('\n', '').replace('\r', '')  # Remove caracteres problemáticos
-
-        # Acessar a página do filme para pegar o link de reprodução do vídeo
-        response = requests.get(link_video, headers=headers, timeout=10)
+        # Acessar a página do filme para obter o link do play
+        response = requests.get(url_pagina_filme, headers=headers)
         if response.status_code != 200:
             return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
 
-        # Processar novamente o HTML da página do filme
-        soup = BeautifulSoup(response.text, 'html.parser')
-        video_link = None
+        soup = BeautifulSoup(response.content, 'html.parser')
+        link_video = None
 
-        # Verificar se o link de reprodução está disponível no botão
+        # Extrair o link do botão webvideocast
         button = soup.find('button', {'class': 'webvideocast'})
         if button and 'onclick' in button.attrs:
             onclick_value = button['onclick']
-            video_link = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
+            link_video = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
 
-        # Se não encontrar no botão, buscar na div com a classe 'option'
-        if not video_link:
+        # Se o link não foi encontrado no botão, procurar na div com classe option
+        if not link_video:
             option = soup.find('div', {'class': 'option', 'data-link': True})
             if option:
-                video_link = option['data-link']
+                link_video = option['data-link']
 
-        if video_link:
-            return video_link, None
+        if link_video:
+            return link_video, None
         else:
             return None, "Link de reprodução não encontrado"
-
+    
+    except requests.RequestException as e:
+        return None, f"Erro na requisição HTTP: {str(e)}"
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
@@ -74,6 +67,8 @@ def pesquisar_filme():
         titulo = request.args.get('titulo')
         if not titulo:
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
+        if not titulo.strip():
+            return jsonify({"erro": "O título não pode ser vazio"}), 400
 
         link_play, erro = buscar_link_reproducao(titulo)
         if erro:
