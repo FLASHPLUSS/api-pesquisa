@@ -10,12 +10,7 @@ def buscar_link_reproducao(titulo):
     # URL de pesquisa
     url_pesquisa = "https://wix.maxcine.top/public/pesquisa"
     params = {"search": titulo}
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    
-    # Faz a requisição de pesquisa
-    response = requests.get(url_pesquisa, params=params, headers=headers)
+    response = requests.get(url_pesquisa, params=params)
     
     if response.status_code != 200:
         return None, "Erro na pesquisa do filme"
@@ -35,7 +30,7 @@ def buscar_link_reproducao(titulo):
     url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
     
     # Acessar a página do filme para obter o link do play
-    response = requests.get(url_pagina_filme, headers=headers)
+    response = requests.get(url_pagina_filme)
     if response.status_code != 200:
         return None, "Erro ao acessar a página do filme"
 
