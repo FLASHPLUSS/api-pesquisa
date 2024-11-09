@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
 import traceback
+from unidecode import unidecode
 
 app = Flask(__name__)
 
@@ -23,11 +24,12 @@ def buscar_link_reproducao(titulo):
         # Usar BeautifulSoup para encontrar o link da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
         link_pagina_filme = None
+        titulo_normalizado = unidecode(titulo).strip().lower()
 
-        # Procura pelo link exato do filme na lista de resultados
+        # Procura pelo link mais próximo ao título do filme na lista de resultados
         for link in soup.find_all('a', href=True):
-            titulo_filme = link.get_text().strip()
-            if titulo_filme.lower() == titulo.lower() and "/public/filme/" in link['href']:
+            titulo_filme = unidecode(link.get_text().strip().lower())
+            if titulo_filme == titulo_normalizado and "/public/filme/" in link['href']:
                 link_pagina_filme = link['href']
                 break
 
