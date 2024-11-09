@@ -19,9 +19,12 @@ def buscar_link_reproducao(titulo):
         # Verifique se a resposta não está vazia e se é um JSON válido
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
-        
+
+        # Imprimir o conteúdo da resposta para depuração
+        print("Resposta da requisição:", response.text)  # Aqui vemos o conteúdo real da resposta
+
         try:
-            filmes = response.json()
+            filmes = response.json()  # Tenta converter para JSON
         except ValueError:
             return None, f"Resposta do servidor não é um JSON válido: {response.text}"
 
