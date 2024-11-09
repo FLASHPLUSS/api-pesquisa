@@ -1,5 +1,6 @@
 import requests
 from flask import Flask, jsonify, request
+from bs4 import BeautifulSoup
 import traceback
 
 app = Flask(__name__)
@@ -21,21 +22,22 @@ def buscar_link_reproducao(titulo):
         # Depuração: Verificar o conteúdo da resposta
         print("Resposta recebida:", response.text)
 
-        # Tentar extrair o link de reprodução diretamente da resposta
-        try:
-            # Espera-se que a resposta contenha o link diretamente em JSON
-            data = response.json()
-            print("Resposta JSON:", data)  # Verifique o conteúdo do JSON para depuração
+        # Usar BeautifulSoup para parsear o HTML e encontrar o link do filme
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Procurar o link do filme nos resultados
+        link_video = None
+        for link in soup.find_all('a', href=True):
+            if "/public/filme/" in link['href']:
+                link_video = link['href']
+                break
 
-            link_video = data.get('link', None)
-
-            if link_video:
-                return link_video, None
-            else:
-                return None, "Link de reprodução não encontrado na resposta"
-
-        except ValueError:
-            return None, f"Erro ao processar a resposta JSON. Conteúdo recebido: {response.text}"
+        if link_video:
+            # Retornar o link completo
+            link_video = f"https://wix.maxcine.top{link_video}"
+            return link_video, None
+        else:
+            return None, "Filme não encontrado ou link de reprodução não encontrado"
 
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
