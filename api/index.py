@@ -7,15 +7,12 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 
 def buscar_link_reproducao(titulo):
-    # URL de pesquisa
     url_pesquisa = "https://wix.maxcine.top/public/pesquisa"
     params = {"search": titulo}
     response = requests.get(url_pesquisa, params=params)
-    
     if response.status_code != 200:
         return None, "Erro na pesquisa do filme"
 
-    # Usar BeautifulSoup para encontrar o link da página do filme
     soup = BeautifulSoup(response.content, 'html.parser')
     link_pagina_filme = None
     for link in soup.find_all('a', href=True):
@@ -26,10 +23,7 @@ def buscar_link_reproducao(titulo):
     if not link_pagina_filme:
         return None, "Filme não encontrado"
 
-    # Formar a URL completa da página do filme
     url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
-    
-    # Acessar a página do filme para obter o link do play
     response = requests.get(url_pagina_filme)
     if response.status_code != 200:
         return None, "Erro ao acessar a página do filme"
@@ -37,13 +31,11 @@ def buscar_link_reproducao(titulo):
     soup = BeautifulSoup(response.content, 'html.parser')
     link_video = None
 
-    # Extrair o link do botão webvideocast
     button = soup.find('button', {'class': 'webvideocast'})
     if button and 'onclick' in button.attrs:
         onclick_value = button['onclick']
         link_video = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
 
-    # Se o link não foi encontrado no botão, procurar na div com classe option
     if not link_video:
         option = soup.find('div', {'class': 'option', 'data-link': True})
         if option:
