@@ -18,26 +18,33 @@ def buscar_link_reproducao(titulo):
         response = requests.get(url_pesquisa, params=params, headers=headers)
         
         if response.status_code != 200:
-            return None, f"Erro na pesquisa do filme, status: {response.status_code}"
+            return None, None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
         # Usar BeautifulSoup para encontrar o link da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
         link_pagina_filme = None
+        titulo_filme_encontrado = None
+
+        # Procurar o link do filme específico
         for link in soup.find_all('a', href=True):
             if "/public/filme/" in link['href']:
-                link_pagina_filme = link['href']
-                break
+                # Verificar se o título encontrado corresponde ao título pesquisado
+                titulo_pagina = link.get_text().strip()
+                if titulo.lower() == titulo_pagina.lower():
+                    link_pagina_filme = link['href']
+                    titulo_filme_encontrado = titulo_pagina
+                    break
 
         if not link_pagina_filme:
-            return None, "Filme não encontrado"
+            return None, None, "Filme específico não encontrado"
 
         # Formar a URL completa da página do filme
-        url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if not link_pagina_filme.startswith('http') else link_pagina_filme
+        url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
         
         # Acessar a página do filme para obter o link do play
         response = requests.get(url_pagina_filme, headers=headers)
         if response.status_code != 200:
-            return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
+            return None, None, f"Erro ao acessar a página do filme, status: {response.status_code}"
 
         soup = BeautifulSoup(response.content, 'html.parser')
         link_video = None
@@ -55,12 +62,12 @@ def buscar_link_reproducao(titulo):
                 link_video = option['data-link']
 
         if link_video:
-            return link_video, None
+            return titulo_filme_encontrado, url_pagina_filme, link_video
         else:
-            return None, "Link de reprodução não encontrado"
+            return titulo_filme_encontrado, url_pagina_filme, "Link de reprodução não encontrado"
     
     except Exception as e:
-        return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
+        return None, None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
 @app.route('/api/pesquisar', methods=['GET'])
 def pesquisar_filme():
@@ -69,11 +76,12 @@ def pesquisar_filme():
         if not titulo:
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
 
-        link_play, erro = buscar_link_reproducao(titulo)
-        if erro:
-            return jsonify({"erro": erro}), 500
+        titulo_filme, link_filme, link_play = buscar_link_reproducao(titulo)
+        
+        if link_filme is None or link_play is None:
+            return jsonify({"erro": link_play or "Erro desconhecido"}), 500
 
-        return jsonify({"titulo": titulo, "link_play": link_play})
+        return jsonify({"titulo": titulo_filme, "link_filme": link_filme, "link_play": link_play})
     
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
