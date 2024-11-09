@@ -30,13 +30,13 @@ def buscar_link_reproducao(titulo):
             if "/public/filme/" in link['href']:
                 # Verificar se o título encontrado corresponde ao título pesquisado
                 titulo_pagina = link.get_text().strip()
-                if titulo.lower() == titulo_pagina.lower():
+                if titulo.lower() in titulo_pagina.lower():
                     link_pagina_filme = link['href']
                     titulo_filme_encontrado = titulo_pagina
                     break
 
         if not link_pagina_filme:
-            return None, None, "Filme específico não encontrado"
+            return None, None, "Filme específico não encontrado - verifique o título ou a estrutura da página."
 
         # Formar a URL completa da página do filme
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
