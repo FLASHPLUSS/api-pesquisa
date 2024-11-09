@@ -16,11 +16,14 @@ def buscar_link_reproducao(titulo):
         # Faz a requisição de pesquisa em tempo real
         response = requests.get(url_pesquisa, headers=headers)
 
+        # Verifique se a resposta não está vazia e se é um JSON válido
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
-
-        # A resposta é esperada como um JSON com a lista de filmes
-        filmes = response.json()
+        
+        try:
+            filmes = response.json()
+        except ValueError:
+            return None, f"Resposta do servidor não é um JSON válido: {response.text}"
 
         if not filmes or 'id' not in filmes[0]:
             return None, "Filme não encontrado"
