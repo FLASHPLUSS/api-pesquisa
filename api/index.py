@@ -1,43 +1,65 @@
 import requests
-from flask import Flask, jsonify, request
 from bs4 import BeautifulSoup
+from flask import Flask, jsonify, request
 import traceback
 
 app = Flask(__name__)
 
 def buscar_link_reproducao(titulo):
     try:
-        # Montar a URL de pesquisa direta
+        # URL de pesquisa com o parâmetro 'search'
         url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-
+        
         # Faz a requisição de pesquisa
         response = requests.get(url_pesquisa, headers=headers, timeout=10)
         
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
-        # Depuração: Verificar o conteúdo da resposta
-        print("Resposta recebida:", response.text)
-
-        # Usar BeautifulSoup para parsear o HTML e encontrar o link do filme
+        # Usar BeautifulSoup para processar o HTML e procurar o link do filme
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Procurar o link do filme nos resultados
         link_video = None
+
+        # Procurar pelo link de reprodução dentro do HTML
         for link in soup.find_all('a', href=True):
-            if "/public/filme/" in link['href']:
+            if "/public/filme/" in link['href']:  # Encontra o link da página do filme
                 link_video = link['href']
                 break
+        
+        if not link_video:
+            return None, "Filme não encontrado"
 
-        if link_video:
-            # Retornar o link completo
-            link_video = f"https://wix.maxcine.top{link_video}"
-            return link_video, None
+        # Formar a URL completa do filme
+        link_video = f"https://wix.maxcine.top{link_video}"
+
+        # Acessar a página do filme para pegar o link de reprodução do vídeo
+        response = requests.get(link_video, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
+
+        # Processar novamente o HTML da página do filme
+        soup = BeautifulSoup(response.text, 'html.parser')
+        video_link = None
+
+        # Verificar se o link de reprodução está disponível no botão
+        button = soup.find('button', {'class': 'webvideocast'})
+        if button and 'onclick' in button.attrs:
+            onclick_value = button['onclick']
+            video_link = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
+
+        # Se não encontrar no botão, buscar na div com a classe 'option'
+        if not video_link:
+            option = soup.find('div', {'class': 'option', 'data-link': True})
+            if option:
+                video_link = option['data-link']
+
+        if video_link:
+            return video_link, None
         else:
-            return None, "Filme não encontrado ou link de reprodução não encontrado"
+            return None, "Link de reprodução não encontrado"
 
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
