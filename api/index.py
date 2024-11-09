@@ -35,6 +35,10 @@ def buscar_link_reproducao(titulo):
         # Formar a URL completa do filme
         link_video = f"https://wix.maxcine.top{link_video}"
 
+        # Validar a URL para garantir que não tenha caracteres indesejados
+        link_video = link_video.strip()  # Remove espaços extras
+        link_video = link_video.replace('%20', ' ').replace('%0d%0a', '').replace('\n', '').replace('\r', '')  # Remove caracteres problemáticos
+
         # Acessar a página do filme para pegar o link de reprodução do vídeo
         response = requests.get(link_video, headers=headers, timeout=10)
         if response.status_code != 200:
