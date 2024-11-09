@@ -18,10 +18,15 @@ def buscar_link_reproducao(titulo):
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
+        # Depuração: Verificar o conteúdo da resposta
+        print("Resposta recebida:", response.text)
+
         # Tentar extrair o link de reprodução diretamente da resposta
         try:
-            # Espera-se que a resposta contenha o link diretamente
+            # Espera-se que a resposta contenha o link diretamente em JSON
             data = response.json()
+            print("Resposta JSON:", data)  # Verifique o conteúdo do JSON para depuração
+
             link_video = data.get('link', None)
 
             if link_video:
@@ -30,7 +35,7 @@ def buscar_link_reproducao(titulo):
                 return None, "Link de reprodução não encontrado na resposta"
 
         except ValueError:
-            return None, "Erro ao processar a resposta JSON"
+            return None, f"Erro ao processar a resposta JSON. Conteúdo recebido: {response.text}"
 
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
