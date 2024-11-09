@@ -14,8 +14,8 @@ def buscar_link_reproducao(titulo):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         
-        # Faz a requisição de pesquisa
-        response = requests.get(url_pesquisa, params=params, headers=headers)
+        # Faz a requisição de pesquisa com timeout
+        response = requests.get(url_pesquisa, params=params, headers=headers, timeout=10)
         
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
@@ -23,19 +23,22 @@ def buscar_link_reproducao(titulo):
         # Usar BeautifulSoup para encontrar o link da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
         link_pagina_filme = None
+
+        # Procura pelo link exato do filme na lista de resultados
         for link in soup.find_all('a', href=True):
-            if "/public/filme/" in link['href']:
+            titulo_filme = link.get_text().strip()
+            if titulo_filme.lower() == titulo.lower() and "/public/filme/" in link['href']:
                 link_pagina_filme = link['href']
                 break
 
         if not link_pagina_filme:
-            return None, "Filme não encontrado"
+            return None, "Filme não encontrado com o título exato"
 
         # Formar a URL completa da página do filme
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if not link_pagina_filme.startswith('http') else link_pagina_filme
-        
+
         # Acessar a página do filme para obter o link do play
-        response = requests.get(url_pagina_filme, headers=headers)
+        response = requests.get(url_pagina_filme, headers=headers, timeout=10)
         if response.status_code != 200:
             return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
 
