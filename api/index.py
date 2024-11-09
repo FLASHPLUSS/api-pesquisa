@@ -16,26 +16,27 @@ def buscar_link_reproducao(titulo):
         # Faz a requisição de pesquisa em tempo real
         response = requests.get(url_pesquisa, headers=headers)
 
-        # Verifique se a resposta não está vazia e se é um JSON válido
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
         # Imprimir o conteúdo da resposta para depuração
         print("Resposta da requisição:", response.text)  # Aqui vemos o conteúdo real da resposta
 
-        try:
-            filmes = response.json()  # Tenta converter para JSON
-        except ValueError:
-            return None, f"Resposta do servidor não é um JSON válido: {response.text}"
+        # Usar BeautifulSoup para fazer o parsing do HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-        if not filmes or 'id' not in filmes[0]:
+        # Procurar o link do filme na resposta HTML
+        link_pagina_filme = None
+        for link in soup.find_all('a', href=True):
+            if "/public/filme/" in link['href']:
+                link_pagina_filme = link['href']
+                break
+
+        if not link_pagina_filme:
             return None, "Filme não encontrado"
 
-        # Extrair o ID do primeiro filme encontrado
-        id_filme = filmes[0]['id']
-        
-        # Formar a URL da página do filme
-        url_pagina_filme = f"https://wix.maxcine.top/public/filme/{id_filme}"
+        # Formar a URL completa da página do filme
+        url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
 
         # Acessar a página do filme para obter o link do play
         response = requests.get(url_pagina_filme, headers=headers)
