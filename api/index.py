@@ -19,19 +19,19 @@ def buscar_link_reproducao(titulo):
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
-        # Usar BeautifulSoup para encontrar o link da página do filme
+        # Usar BeautifulSoup para encontrar o ID do filme
         soup = BeautifulSoup(response.content, 'html.parser')
-        link_pagina_filme = None
+        id_filme = None
         for link in soup.find_all('a', href=True):
             if "/public/filme/" in link['href']:
-                link_pagina_filme = link['href']
+                id_filme = link['href'].split('/')[-1]  # Extrai o ID do filme
                 break
 
-        if not link_pagina_filme:
+        if not id_filme:
             return None, "Filme não encontrado"
 
-        # Formar a URL completa da página do filme
-        url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if not link_pagina_filme.startswith('http') else link_pagina_filme
+        # Formar a URL completa da página do filme usando o ID
+        url_pagina_filme = f"https://wix.maxcine.top/public/filme/{id_filme}"
         
         # Acessar a página do filme para obter o link do play
         response = requests.get(url_pagina_filme, headers=headers)
