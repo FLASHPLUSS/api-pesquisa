@@ -42,11 +42,12 @@ def buscar_link_filme(titulo):
 
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Procurar pela tag <source> com o link de reprodução
-        # A ideia aqui é que a URL do vídeo está dentro da tag <source>
+        # Procurar a tag <source> com o link de reprodução
         source_tag = soup.find('source', src=True)
         if source_tag and source_tag['src']:
-            link_reproducao = source_tag['src']  # Usar a URL do src diretamente (não adicionar https)
+            link_reproducao = source_tag['src']
+            if link_reproducao.startswith("//"):  # Verifica se o link é relativo
+                link_reproducao = "http:" + link_reproducao  # Adiciona o protocolo HTTP
             return link_reproducao, "MP4", None
         else:
             return None, None, "Link de reprodução não encontrado"
