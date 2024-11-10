@@ -51,12 +51,17 @@ def buscar_url_pagina_filme_visioncine(titulo):
         url_pagina_filme = None
 
         # Encontrar o link da página do filme dentro da página de resultado de pesquisa
+        # Procurando pelo link dentro do botão "Assistir"
         result = soup.find('a', {'class': 'btn free fw-bold', 'href': True})
         if result:
             url_pagina_filme = result['href']
 
         if not url_pagina_filme:
             return None, "Página do filme não encontrada no Visioncine"
+
+        # Retorna a URL completa do filme
+        if url_pagina_filme.startswith('/'):
+            url_pagina_filme = f"https://www.visioncine-1.com.br{url_pagina_filme}"
 
         return url_pagina_filme, None
 
