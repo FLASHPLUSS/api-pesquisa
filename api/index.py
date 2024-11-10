@@ -23,13 +23,20 @@ def buscar_link_reproducao(titulo):
         # Usar BeautifulSoup para encontrar a URL da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
         link_pagina_filme = None
-        for link in soup.find_all('a', href=True):
-            if "/public/filme/" in link['href']:
-                link_pagina_filme = f"https://wix.maxcine.top{link['href']}"
-                break  # Encontrado o primeiro filme correspondente
+        
+        # Procurar pela div com a classe `result-card` e extrair o link do filme
+        result_card = soup.find('div', class_='result-card')
+        if result_card:
+            link_tag = result_card.find('a', href=True)
+            if link_tag and "/public/filme/" in link_tag['href']:
+                link_pagina_filme = link_tag['href'].strip()
 
         if not link_pagina_filme:
             return None, "Filme não encontrado"
+
+        # Completar a URL da página do filme, caso seja um link relativo
+        if not link_pagina_filme.startswith("http"):
+            link_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
 
         # Acessa a página do filme para obter o link de reprodução
         response_filme = requests.get(link_pagina_filme, headers=headers)
