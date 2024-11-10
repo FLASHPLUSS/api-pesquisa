@@ -81,7 +81,7 @@ def buscar_pagina_do_filme_assistir(titulo):
         iframe = soup.find('iframe', {'src': True})
         if iframe and 'src' in iframe.attrs:
             link_video = iframe['src']
-            # Retorna o link completo, garantindo que o prefixo do URL esteja correto
+            # Verifica se o link do iframe é um link relativo e ajusta
             if link_video.startswith("//"):
                 link_video = "https:" + link_video
             return link_video, None
@@ -90,6 +90,11 @@ def buscar_pagina_do_filme_assistir(titulo):
         video_source = soup.find('source', {'src': True})
         if video_source and 'src' in video_source.attrs:
             return video_source['src'], None
+        
+        # Se não encontrar o link, tenta um último recurso com um link direto
+        link_video = soup.find('a', {'href': True, 'class': 'btn btn-primary'})
+        if link_video and 'href' in link_video.attrs:
+            return link_video['href'], None
         
         return None, "Link de reprodução não encontrado no assistir.biz"
 
@@ -114,8 +119,8 @@ def pesquisar_filme():
         if erro:
             return jsonify({"erro": erro}), 404
         
-        # Retorna o link encontrado ou um erro caso não haja link
-        return jsonify({"titulo": titulo, "link_filme": link_filme})
+        # Aqui, você retorna uma página HTML com os botões para controle do player
+        return render_template('player.html', titulo=titulo, link_filme=link_filme)
     
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
