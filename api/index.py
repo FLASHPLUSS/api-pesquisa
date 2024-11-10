@@ -17,7 +17,7 @@ def buscar_link_filme(titulo):
         response = requests.get(url_pesquisa, headers=headers)
         
         if response.status_code != 200:
-            return None, f"Erro na pesquisa do filme, status: {response.status_code}"
+            return None, None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
         # Usar BeautifulSoup para analisar o HTML da página de pesquisa
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -30,7 +30,7 @@ def buscar_link_filme(titulo):
                 break
 
         if not link_pagina_filme:
-            return None, "Filme não encontrado"
+            return None, None, "Filme não encontrado"
 
         # Formar a URL completa para a página do filme
         url_pagina_filme = f"https://www.assistir.biz{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
@@ -38,7 +38,7 @@ def buscar_link_filme(titulo):
         # Agora, vamos buscar o link de reprodução
         response = requests.get(url_pagina_filme, headers=headers)
         if response.status_code != 200:
-            return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
+            return None, None, f"Erro ao acessar a página do filme, status: {response.status_code}"
 
         soup = BeautifulSoup(response.content, 'html.parser')
         
@@ -55,17 +55,16 @@ def buscar_link_filme(titulo):
         if iframe_link:
             # Verificar se o link contém ".mp4"
             if ".mp4" in iframe_link:
-                return iframe_link, None
+                return iframe_link, "MP4", None
+            elif ".m3u8" in iframe_link:
+                return iframe_link, "HLS", None
             else:
-                # Caso o link não tenha ".mp4", tente encontrar um link válido para um vídeo MP4
-                # Aqui, podemos adicionar mais lógica, dependendo da estrutura do site e dos links de vídeo.
-                # Por exemplo, podemos tentar buscar um link diretamente dentro de um iframe ou de uma URL de vídeo.
-                return iframe_link, "Link de vídeo não é MP4, tentaremos outra abordagem."
+                return iframe_link, "Desconhecido", "Link de vídeo não é MP4 ou HLS, tentaremos outra abordagem."
         else:
-            return None, "Nenhum link de reprodução encontrado"
+            return None, None, "Nenhum link de reprodução encontrado"
 
     except Exception as e:
-        return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
+        return None, None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
 @app.route('/api/pesquisar', methods=['GET'])
 def pesquisar_filme():
@@ -75,12 +74,16 @@ def pesquisar_filme():
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
 
         # Chama a função que busca o link do filme
-        link_filme, erro = buscar_link_filme(titulo)
+        link_filme, tipo_video, erro = buscar_link_filme(titulo)
         if erro:
             return jsonify({"erro": erro}), 500
 
-        # Retorna o link do filme ou erro
-        return jsonify({"titulo": titulo, "link_filme": link_filme})
+        # Retorna o link do filme e o tipo de vídeo encontrado
+        return jsonify({
+            "titulo": titulo, 
+            "link_filme": link_filme, 
+            "tipo_video": tipo_video
+        })
     
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
