@@ -69,8 +69,30 @@ def buscar_pagina_do_filme_assistir(titulo):
         titulo_formatado = titulo.lower().replace(" ", "-")
         url_filme = f"https://www.assistir.biz/filme/{titulo_formatado}"
         
-        # Retorna a URL da página do filme
-        return url_filme, None
+        # Faz a requisição para a página do filme
+        response = requests.get(url_filme)
+        if response.status_code != 200:
+            return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
+
+        # Usa BeautifulSoup para analisar o conteúdo HTML da página
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Tenta encontrar o link de reprodução dentro do iframe
+        iframe = soup.find('iframe', {'src': True})
+        if iframe and 'src' in iframe.attrs:
+            link_video = iframe['src']
+            # Retorna o link completo, garantindo que o prefixo do URL esteja correto
+            if link_video.startswith("//"):
+                link_video = "https:" + link_video
+            return link_video, None
+
+        # Se o iframe não for encontrado, tenta pegar o link de vídeo direto
+        video_source = soup.find('source', {'src': True})
+        if video_source and 'src' in video_source.attrs:
+            return video_source['src'], None
+        
+        return None, "Link de reprodução não encontrado no assistir.biz"
+
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
