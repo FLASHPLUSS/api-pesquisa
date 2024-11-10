@@ -17,7 +17,7 @@ def buscar_link_filme(titulo):
         response = requests.get(url_pesquisa, headers=headers)
         
         if response.status_code != 200:
-            return None, None, f"Erro na pesquisa do filme, status: {response.status_code}"
+            return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
         # Usar BeautifulSoup para analisar o HTML da página de pesquisa
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -30,30 +30,15 @@ def buscar_link_filme(titulo):
                 break
 
         if not link_pagina_filme:
-            return None, None, "Filme não encontrado"
+            return None, "Filme não encontrado"
 
         # Formar a URL completa para a página do filme
         url_pagina_filme = f"https://www.assistir.biz{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
 
-        # Agora, vamos buscar o link de reprodução da página do filme
-        response = requests.get(url_pagina_filme, headers=headers)
-        if response.status_code != 200:
-            return None, None, f"Erro ao acessar a página do filme, status: {response.status_code}"
-
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Procurar a tag <source> com o link de reprodução
-        source_tag = soup.find('source', src=True)
-        if source_tag and source_tag['src']:
-            link_reproducao = source_tag['src']
-            if link_reproducao.startswith("//"):  # Verifica se o link é relativo
-                link_reproducao = "http:" + link_reproducao  # Adiciona o protocolo HTTP
-            return link_reproducao, "MP4", None
-        else:
-            return None, None, "Link de reprodução não encontrado"
+        return url_pagina_filme, None
 
     except Exception as e:
-        return None, None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
+        return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
 @app.route('/api/pesquisar', methods=['GET'])
 def pesquisar_filme():
@@ -63,15 +48,14 @@ def pesquisar_filme():
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
 
         # Chama a função que busca o link do filme
-        link_filme, tipo_video, erro = buscar_link_filme(titulo)
+        link_filme, erro = buscar_link_filme(titulo)
         if erro:
             return jsonify({"erro": erro}), 500
 
-        # Retorna o link do filme e o tipo de vídeo encontrado
+        # Retorna o link da página do filme
         return jsonify({
             "titulo": titulo, 
-            "link_filme": link_filme, 
-            "tipo_video": tipo_video
+            "link_filme": link_filme
         })
     
     except Exception as e:
