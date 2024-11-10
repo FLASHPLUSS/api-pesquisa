@@ -41,7 +41,7 @@ def buscar_link_reproducao(titulo):
         soup = BeautifulSoup(response.content, 'html.parser')
         link_video = None
 
-        # Extrair o link do botão webvideocast
+        # Extrair o link do botão webvideocast (onde está o link do vídeo de reprodução)
         button = soup.find('button', {'class': 'webvideocast'})
         if button and 'onclick' in button.attrs:
             onclick_value = button['onclick']
@@ -54,7 +54,7 @@ def buscar_link_reproducao(titulo):
                 link_video = option['data-link']
 
         if link_video:
-            return link_video, None
+            return link_video, None  # Retorna o link de reprodução
         else:
             return None, "Link de reprodução não encontrado"
     
