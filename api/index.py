@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 def buscar_link_reproducao(titulo):
     try:
-        # URL de pesquisa para buscar o link de reprodução diretamente
+        # URL de pesquisa para buscar a página do filme
         url_pesquisa = "https://wix.maxcine.top/public/pesquisa"
         params = {"search": titulo}
         headers = {
@@ -33,7 +33,7 @@ def buscar_link_reproducao(titulo):
         # Formar a URL completa da página do filme
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if not link_pagina_filme.startswith('http') else link_pagina_filme
 
-        # Acessar a página do filme para obter o link do play
+        # Acessar a página do filme para obter o link de reprodução
         response = requests.get(url_pagina_filme, headers=headers)
         if response.status_code != 200:
             return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
