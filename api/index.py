@@ -62,28 +62,14 @@ def buscar_link_filme(titulo):
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
-# Função de fallback para buscar link no site "assistir.biz"
+# Função de fallback para buscar link no site "assistir.biz" usando URL direta do título
 def buscar_pagina_do_filme(titulo):
     try:
-        # URL de pesquisa para "assistir.biz"
-        url_pesquisa = f"https://www.assistir.biz/busca?q={titulo.replace(' ', '%20')}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36'
-        }
+        # Formata o título para URL
+        titulo_formatado = titulo.lower().replace(" ", "-")
+        url_filme = f"https://www.assistir.biz/filme/{titulo_formatado}"
         
-        # Faz a requisição de busca
-        response = requests.get(url_pesquisa, headers=headers)
-        
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # Ajuste o seletor conforme o HTML da página de resultados para localizar o link do filme
-            link_filme = soup.find('a', {'class': 'result-link'})  # Ajuste o seletor 'result-link' conforme o site
-            
-            if link_filme:
-                url_filme = "https://www.assistir.biz" + link_filme.get('href')
-                return obter_url_video_direta(url_filme)
-        
-        return None, "Filme não encontrado no assistir.biz"
+        return obter_url_video_direta(url_filme)
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
