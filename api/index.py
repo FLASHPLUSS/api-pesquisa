@@ -5,9 +5,10 @@ import traceback
 
 app = Flask(__name__)
 
+# Função para buscar link no site "wix.maxcine.top"
 def buscar_link_filme(titulo):
     try:
-        # Nova URL de pesquisa em tempo real
+        # URL de pesquisa para "wix.maxcine.top"
         url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -19,7 +20,7 @@ def buscar_link_filme(titulo):
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
-        # Usar BeautifulSoup para encontrar o link da página do filme
+        # Usa BeautifulSoup para encontrar o link da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
         link_pagina_filme = None
         for link in soup.find_all('a', href=True):
@@ -28,12 +29,12 @@ def buscar_link_filme(titulo):
                 break
 
         if not link_pagina_filme:
-            return None, "Filme não encontrado"
+            return None, "Filme não encontrado no wix.maxcine.top"
 
         # Formar a URL completa da página do filme
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
         
-        # Agora fazer a requisição para a página do filme para pegar o link de reprodução
+        # Faz a requisição para a página do filme
         response = requests.get(url_pagina_filme, headers=headers)
         if response.status_code != 200:
             return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
@@ -41,13 +42,13 @@ def buscar_link_filme(titulo):
         soup = BeautifulSoup(response.content, 'html.parser')
         link_video = None
 
-        # Extrair o link do botão webvideocast
+        # Extrai o link do botão "webvideocast"
         button = soup.find('button', {'class': 'webvideocast'})
         if button and 'onclick' in button.attrs:
             onclick_value = button['onclick']
             link_video = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
 
-        # Se o link não foi encontrado no botão, procurar na div com classe option
+        # Se o link não foi encontrado no botão, procurar na div com classe "option"
         if not link_video:
             option = soup.find('div', {'class': 'option', 'data-link': True})
             if option:
@@ -56,11 +57,59 @@ def buscar_link_filme(titulo):
         if link_video:
             return link_video, None
         else:
-            return None, "Link de reprodução não encontrado"
+            return None, "Link de reprodução não encontrado no wix.maxcine.top"
     
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
+# Função de fallback para buscar link no site "assistir.biz"
+def buscar_pagina_do_filme(titulo):
+    try:
+        # URL de pesquisa para "assistir.biz"
+        url_pesquisa = f"https://www.assistir.biz/busca?q={titulo.replace(' ', '%20')}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36'
+        }
+        
+        # Faz a requisição de busca
+        response = requests.get(url_pesquisa, headers=headers)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # Ajuste o seletor conforme o HTML da página de resultados para localizar o link do filme
+            link_filme = soup.find('a', {'class': 'result-link'})  # Ajuste o seletor 'result-link' conforme o site
+            
+            if link_filme:
+                url_filme = "https://www.assistir.biz" + link_filme.get('href')
+                return obter_url_video_direta(url_filme)
+        
+        return None, "Filme não encontrado no assistir.biz"
+    except Exception as e:
+        return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
+
+# Função para extrair o link direto do vídeo em "assistir.biz"
+def obter_url_video_direta(url_filme):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36',
+        'Referer': url_filme
+    }
+    
+    response = requests.get(url_filme, headers=headers)
+    
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Encontra a tag <source> com o link do vídeo
+        source_tag = soup.find('source', {'type': 'video/mp4'})
+        if source_tag:
+            video_url = source_tag.get('src')
+            if video_url.startswith('//'):
+                video_url = 'https:' + video_url
+            return video_url, None
+    
+    return None, "Link de reprodução não encontrado no assistir.biz"
+
+# Rota para pesquisar e retornar o link direto de um filme
 @app.route('/api/pesquisar', methods=['GET'])
 def pesquisar_filme():
     try:
@@ -68,10 +117,16 @@ def pesquisar_filme():
         if not titulo:
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
 
+        # Primeiro, tenta buscar o filme no site "wix.maxcine.top"
         link_filme, erro = buscar_link_filme(titulo)
+        
+        # Se não encontrar, tenta no "assistir.biz"
         if erro:
-            return jsonify({"erro": erro}), 500
+            link_filme, erro = buscar_pagina_do_filme(titulo)
 
+        if erro:
+            return jsonify({"erro": erro}), 404
+        
         return jsonify({"titulo": titulo, "link_filme": link_filme})
     
     except Exception as e:
