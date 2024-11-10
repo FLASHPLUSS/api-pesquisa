@@ -114,8 +114,8 @@ def pesquisar_filme():
         if erro:
             return jsonify({"erro": erro}), 404
         
-        # Aqui, você retorna uma página HTML com os botões para controle do player
-        return render_template('player.html', titulo=titulo, link_filme=link_filme)
+        # Retorna o link encontrado ou um erro caso não haja link
+        return jsonify({"titulo": titulo, "link_filme": link_filme})
     
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
