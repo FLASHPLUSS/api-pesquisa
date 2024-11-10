@@ -12,10 +12,10 @@ def buscar_link_filme(titulo):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        
-        # Faz a requisição de pesquisa
-        response = requests.get(url_pesquisa, headers=headers)
-        
+
+        # Faz a requisição de pesquisa com timeout
+        response = requests.get(url_pesquisa, headers=headers, timeout=10)  # Timeout de 10 segundos
+
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
@@ -34,7 +34,10 @@ def buscar_link_filme(titulo):
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
 
         return url_pagina_filme, None
-    
+
+    except requests.exceptions.Timeout:
+        return None, "O tempo de resposta do servidor de pesquisa foi excedido. Tente novamente mais tarde."
+
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
@@ -50,7 +53,7 @@ def pesquisar_filme():
             return jsonify({"erro": erro}), 500
 
         return jsonify({"titulo": titulo, "link_filme": link_filme})
-    
+
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
 
