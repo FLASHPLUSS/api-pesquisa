@@ -2,40 +2,37 @@ import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
 import traceback
-import urllib.parse
 
 app = Flask(__name__)
 
 def buscar_link_reproducao(titulo):
     try:
-        # Codificar o título para ser seguro em URL
-        titulo_encoded = urllib.parse.quote(titulo)
-        
-        # URL de pesquisa em tempo real com o título codificado
-        url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo_encoded}"
+        # URL de pesquisa
+        url_pesquisa = "https://wix.maxcine.top/public/pesquisa"
+        params = {"search": titulo}
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         
         # Faz a requisição de pesquisa
-        response = requests.get(url_pesquisa, headers=headers)
+        response = requests.get(url_pesquisa, params=params, headers=headers)
         
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
-        # Usar BeautifulSoup para encontrar o ID do filme
+        # Usar BeautifulSoup para encontrar o link da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
-        id_filme = None
+        link_pagina_filme = None
         for link in soup.find_all('a', href=True):
             if "/public/filme/" in link['href']:
-                id_filme = link['href'].split('/')[-1]  # Extrai o ID do filme
+                link_pagina_filme = link['href']
                 break
 
-        if not id_filme:
+        if not link_pagina_filme:
             return None, "Filme não encontrado"
 
-        # Formar a URL completa da página do filme usando o ID
-        url_pagina_filme = f"https://wix.maxcine.top/public/filme/{id_filme}"
+        # Formar a URL completa da página do filme
+        url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if not link_pagina_filme.startswith('http') else link_pagina_filme
         
         # Acessar a página do filme para obter o link do play
         response = requests.get(url_pagina_filme, headers=headers)
