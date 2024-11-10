@@ -35,14 +35,15 @@ def buscar_link_filme(titulo):
         # Formar a URL completa para a página do filme
         url_pagina_filme = f"https://www.assistir.biz{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
 
-        # Agora, vamos buscar o link de reprodução
+        # Agora, vamos buscar o link de reprodução da página do filme
         response = requests.get(url_pagina_filme, headers=headers)
         if response.status_code != 200:
             return None, None, f"Erro ao acessar a página do filme, status: {response.status_code}"
 
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Procurar pela tag <source> com o link do vídeo
+        # Procurar pela tag <source> com o link de reprodução
+        # A ideia aqui é que a URL do vídeo está dentro da tag <source>
         source_tag = soup.find('source', src=True)
         if source_tag and source_tag['src']:
             link_reproducao = f"https:{source_tag['src']}"  # Adicionar 'https:' para formar o link completo
