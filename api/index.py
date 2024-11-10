@@ -53,7 +53,14 @@ def buscar_link_filme(titulo):
                 break  # Caso encontre um player, quebra o loop e retorna o link
 
         if iframe_link:
-            return iframe_link, None
+            # Verificar se o link contém ".mp4"
+            if ".mp4" in iframe_link:
+                return iframe_link, None
+            else:
+                # Caso o link não tenha ".mp4", tente encontrar um link válido para um vídeo MP4
+                # Aqui, podemos adicionar mais lógica, dependendo da estrutura do site e dos links de vídeo.
+                # Por exemplo, podemos tentar buscar um link diretamente dentro de um iframe ou de uma URL de vídeo.
+                return iframe_link, "Link de vídeo não é MP4, tentaremos outra abordagem."
         else:
             return None, "Nenhum link de reprodução encontrado"
 
