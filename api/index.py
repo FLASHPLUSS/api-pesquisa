@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import traceback
 
 app = Flask(__name__)
@@ -114,7 +114,8 @@ def pesquisar_filme():
         if erro:
             return jsonify({"erro": erro}), 404
         
-        return jsonify({"titulo": titulo, "link_filme": link_filme})
+        # Aqui, você retorna uma página HTML com os botões para controle do player
+        return render_template('player.html', titulo=titulo, link_filme=link_filme)
     
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
