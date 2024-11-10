@@ -2,13 +2,17 @@ import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
 import traceback
+import urllib.parse
 
 app = Flask(__name__)
 
 def buscar_link_reproducao(titulo):
     try:
-        # URL de pesquisa atualizada
-        url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
+        # Codificar o título para ser seguro em URL
+        titulo_encoded = urllib.parse.quote(titulo)
+        
+        # URL de pesquisa em tempo real com o título codificado
+        url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo_encoded}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
