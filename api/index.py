@@ -20,45 +20,43 @@ def buscar_link_reproducao(titulo):
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
-        # Usar BeautifulSoup para encontrar a URL da página do filme
+        # Usar BeautifulSoup para analisar o HTML da página de pesquisa
         soup = BeautifulSoup(response.content, 'html.parser')
         link_pagina_filme = None
-        
-        # Procurar pela div com a classe `result-card` e extrair o link do filme
-        result_card = soup.find('div', class_='result-card')
-        if result_card:
-            link_tag = result_card.find('a', href=True)
-            if link_tag and "/public/filme/" in link_tag['href']:
-                link_pagina_filme = link_tag['href'].strip()
 
+        # Procurar o primeiro link de filme encontrado nos resultados
+        for link in soup.find_all('a', href=True):
+            if "/public/filme/" in link['href']:
+                # Constrói a URL completa para a página do filme
+                link_pagina_filme = f"https://wix.maxcine.top{link['href']}"
+                break
+
+        # Se a página do filme não foi encontrada, retorna um erro
         if not link_pagina_filme:
-            return None, "Filme não encontrado"
-
-        # Completar a URL da página do filme, caso seja um link relativo
-        if not link_pagina_filme.startswith("http"):
-            link_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}"
+            return None, "Filme não encontrado na pesquisa"
 
         # Acessa a página do filme para obter o link de reprodução
         response_filme = requests.get(link_pagina_filme, headers=headers)
         if response_filme.status_code != 200:
             return None, f"Erro ao acessar a página do filme, status: {response_filme.status_code}"
 
-        # Usar BeautifulSoup para extrair o link de reprodução da página do filme
+        # Analisar o HTML da página do filme
         soup_filme = BeautifulSoup(response_filme.content, 'html.parser')
         link_video = None
 
-        # Procurar o link no botão 'webvideocast'
+        # Procurar o botão com a classe 'webvideocast' para extrair o link do vídeo
         button = soup_filme.find('button', {'class': 'webvideocast'})
         if button and 'onclick' in button.attrs:
             onclick_value = button['onclick']
             link_video = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
 
-        # Se o link não foi encontrado no botão, procurar na div com classe option
+        # Se o link do botão não foi encontrado, procurar na div com classe 'option'
         if not link_video:
             option = soup_filme.find('div', {'class': 'option', 'data-link': True})
             if option:
                 link_video = option['data-link']
 
+        # Retornar o link do vídeo se encontrado, ou um erro se não encontrado
         if link_video:
             return link_video, None
         else:
