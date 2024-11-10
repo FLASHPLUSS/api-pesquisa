@@ -5,8 +5,8 @@ import traceback
 
 app = Flask(__name__)
 
-# Função para buscar link de filme no Maxcine (site principal)
-def buscar_link_filme_maxcine(titulo):
+# Função para buscar URL da página do filme no Maxcine (site principal)
+def buscar_url_pagina_filme_maxcine(titulo):
     try:
         url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
         headers = {
@@ -28,35 +28,14 @@ def buscar_link_filme_maxcine(titulo):
             return None, "Filme não encontrado no site principal"
 
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
-        
-        response = requests.get(url_pagina_filme, headers=headers)
-        if response.status_code != 200:
-            return None, f"Erro ao acessar a página do filme no site principal, status: {response.status_code}"
 
-        soup = BeautifulSoup(response.content, 'html.parser')
-        link_video = None
-
-        # Extrair link de reprodução
-        button = soup.find('button', {'class': 'webvideocast'})
-        if button and 'onclick' in button.attrs:
-            onclick_value = button['onclick']
-            link_video = onclick_value.split("encodeURIComponent('")[1].split("'))")[0]
-
-        if not link_video:
-            option = soup.find('div', {'class': 'option', 'data-link': True})
-            if option:
-                link_video = option['data-link']
-
-        if link_video:
-            return link_video, None
-        else:
-            return None, "Link de reprodução não encontrado no site principal"
+        return url_pagina_filme, None
     
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
-# Função para buscar link de filme no Visioncine (site secundário)
-def buscar_link_filme_visioncine(titulo):
+# Função para buscar URL da página do filme no Visioncine (site secundário)
+def buscar_url_pagina_filme_visioncine(titulo):
     try:
         url_pesquisa = f"https://www.visioncine-1.com.br/search.php?q={titulo}"
         headers = {
@@ -69,23 +48,22 @@ def buscar_link_filme_visioncine(titulo):
             return None, f"Erro na pesquisa do filme no Visioncine, status: {response.status_code}"
 
         soup = BeautifulSoup(response.content, 'html.parser')
-        video_url = None
+        url_pagina_filme = None
 
-        # Encontrar o link de reprodução (video_url) dentro da página de resultado de pesquisa
-        video_url_element = soup.find('a', {'class': 'btn free fw-bold', 'href': True})
-        if video_url_element:
-            video_url = video_url_element['href']
+        # Encontrar o link da página do filme dentro da página de resultado de pesquisa
+        # Procurando pelo link dentro do botão "Assistir"
+        result = soup.find('a', {'class': 'btn free fw-bold', 'href': True})
+        if result:
+            url_pagina_filme = result['href']
 
-        if not video_url:
-            return None, "Link de reprodução não encontrado no Visioncine"
+        if not url_pagina_filme:
+            return None, "Página do filme não encontrada no Visioncine"
 
-        # Verificando se existe a classe 'info', que pode conter mais informações
-        info_div = soup.find('div', {'class': 'info col-12 col-md-8 col-lg-7 px-4 px-lg-5 text-center text-md-start align-items-center align-items-md-start'})
-        if info_div:
-            # Você pode adicionar qualquer outra lógica que precise extrair mais detalhes dessa div
-            pass
+        # Retorna a URL completa do filme
+        if url_pagina_filme.startswith('/'):
+            url_pagina_filme = f"https://www.visioncine-1.com.br{url_pagina_filme}"
 
-        return video_url, None
+        return url_pagina_filme, None
 
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
@@ -99,16 +77,16 @@ def pesquisar_filme():
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
 
         # Primeiro, tenta buscar no site principal (Maxcine)
-        link_filme, erro = buscar_link_filme_maxcine(titulo)
+        url_pagina_filme, erro = buscar_url_pagina_filme_maxcine(titulo)
 
         # Se não encontrar no site principal, tenta buscar no site secundário (Visioncine)
-        if not link_filme:
-            link_filme, erro = buscar_link_filme_visioncine(titulo)
+        if not url_pagina_filme:
+            url_pagina_filme, erro = buscar_url_pagina_filme_visioncine(titulo)
 
         if erro:
             return jsonify({"erro": erro}), 500
 
-        return jsonify({"titulo": titulo, "link_filme": link_filme})
+        return jsonify({"titulo": titulo, "url_pagina_filme": url_pagina_filme})
     
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
