@@ -61,9 +61,11 @@ def buscar_link_reproducao(url_pagina_filme):
 
         # Encontrar o link de reprodução no HTML da página do filme
         link_reproducao = None
-        for option in soup.find_all('div', class_='option', attrs={'data-link': True}):
-            link_reproducao = option['data-link']
-            break  # Pega o primeiro link de reprodução disponível
+        # Procurar pela div com a classe 'option' que contém o atributo 'data-link'
+        option_div = soup.find('div', class_='option', attrs={'data-link': True})
+        
+        if option_div:
+            link_reproducao = option_div['data-link']  # Extrair o valor de 'data-link'
 
         return link_reproducao
     
