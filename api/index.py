@@ -12,10 +12,10 @@ def buscar_link_filme(titulo):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-
-        # Faz a requisição de pesquisa com timeout
-        response = requests.get(url_pesquisa, headers=headers, timeout=10)  # Timeout de 10 segundos
-
+        
+        # Faz a requisição de pesquisa
+        response = requests.get(url_pesquisa, headers=headers)
+        
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme, status: {response.status_code}"
 
@@ -33,62 +33,52 @@ def buscar_link_filme(titulo):
         # Formar a URL completa da página do filme
         url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
 
-        # Agora que temos o link da página do filme, vamos buscar o link de reprodução
-        link_reproducao, erro = buscar_link_reproducao(url_pagina_filme)
-        if erro:
-            return None, erro
+        # Agora, vamos pegar o link de reprodução a partir da página do filme
+        link_reproducao = buscar_link_reproducao(url_pagina_filme)
+        if not link_reproducao:
+            return None, "Link de reprodução não encontrado"
 
-        return url_pagina_filme, link_reproducao, None
-
-    except requests.exceptions.Timeout:
-        return None, None, "O tempo de resposta do servidor de pesquisa foi excedido. Tente novamente mais tarde."
-
+        return link_reproducao, None
+    
     except Exception as e:
-        return None, None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
+        return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
 
-def buscar_link_reproducao(url_filme):
+def buscar_link_reproducao(url_pagina_filme):
     try:
         # Faz a requisição para a página do filme
-        response = requests.get(url_filme, timeout=10)
-
+        response = requests.get(url_pagina_filme)
         if response.status_code != 200:
-            return None, f"Erro ao acessar a página do filme, status: {response.status_code}"
-
-        # Usar BeautifulSoup para fazer o parsing da página do filme
+            return None
+        
+        # Usar BeautifulSoup para analisar o conteúdo da página do filme
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Procurar o link de reprodução dentro da div 'player-options'
-        div_player = soup.find('div', class_='player-options')
-        if div_player:
-            # Encontrar todos os links de reprodução (servidores)
-            for option in div_player.find_all('div', class_='option', data_link=True):
-                link_reproducao = option['data-link']
-                return link_reproducao, None
-        return None, "Link de reprodução não encontrado."
+        # Procurar pelo link de reprodução dentro da div com a classe 'player-options'
+        link_reproducao = None
+        option = soup.find('div', class_='player-options')
+        if option:
+            link_reproducao = option.find('div', class_='option')['data-link']
 
-    except requests.exceptions.Timeout:
-        return None, "O tempo de resposta para acessar o filme foi excedido. Tente novamente mais tarde."
-
+        return link_reproducao
     except Exception as e:
-        return None, f"Erro inesperado ao acessar o link de reprodução: {str(e)}\n{traceback.format_exc()}"
+        print(f"Erro ao buscar link de reprodução: {str(e)}")
+        return None
 
 @app.route('/api/pesquisar', methods=['GET'])
 def pesquisar_filme():
     try:
+        # Recebe o título do filme pela query string
         titulo = request.args.get('titulo')
         if not titulo:
             return jsonify({"erro": "Parâmetro 'titulo' é obrigatório"}), 400
 
-        link_filme, link_reproducao, erro = buscar_link_filme(titulo)
+        # Busca o link do filme
+        link_filme, erro = buscar_link_filme(titulo)
         if erro:
             return jsonify({"erro": erro}), 500
 
-        return jsonify({
-            "titulo": titulo,
-            "link_filme": link_filme,
-            "link_reproducao": link_reproducao
-        })
-
+        return jsonify({"titulo": titulo, "link_filme": link_filme})
+    
     except Exception as e:
         return jsonify({"erro": f"Erro no servidor: {str(e)}\n{traceback.format_exc()}"}), 500
 
