@@ -38,8 +38,14 @@ def buscar_url_pagina_filme_maxcine(titulo):
 def buscar_url_pagina_filme_visioncine(titulo):
     try:
         url_pesquisa = f"https://www.visioncine-1.com.br/search.php?q={titulo}"
+        
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "TE": "Trailers"
         }
 
         # Faz a requisição de pesquisa no Visioncine
@@ -51,7 +57,6 @@ def buscar_url_pagina_filme_visioncine(titulo):
         url_pagina_filme = None
 
         # Encontrar o link da página do filme dentro da página de resultado de pesquisa
-        # Procurando pelo link dentro do botão "Assistir"
         result = soup.find('a', {'class': 'btn free fw-bold', 'href': True})
         if result:
             url_pagina_filme = result['href']
