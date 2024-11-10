@@ -69,6 +69,7 @@ def buscar_pagina_do_filme_assistir(titulo):
         titulo_formatado = titulo.lower().replace(" ", "-")
         url_filme = f"https://www.assistir.biz/filme/{titulo_formatado}"
         
+        # Retorna a URL da página do filme
         return url_filme, None
     except Exception as e:
         return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
