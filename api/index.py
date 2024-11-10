@@ -27,8 +27,9 @@ def buscar_link_reproducao(titulo):
         # Procurar o primeiro link de filme encontrado nos resultados
         for link in soup.find_all('a', href=True):
             if "/public/filme/" in link['href']:
-                # Constrói a URL completa para a página do filme
-                link_pagina_filme = f"https://wix.maxcine.top{link['href']}"
+                # Constrói a URL completa para a página do filme e limpa caracteres indesejados
+                link_pagina_filme = f"https://wix.maxcine.top{link['href']}".strip()
+                link_pagina_filme = link_pagina_filme.replace(" ", "").replace("\r", "").replace("\n", "")
                 break
 
         # Se a página do filme não foi encontrada, retorna um erro
