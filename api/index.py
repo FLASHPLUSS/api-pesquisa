@@ -5,40 +5,11 @@ import traceback
 
 app = Flask(__name__)
 
-# Função para buscar URL da página do filme no Maxcine (site principal)
-def buscar_url_pagina_filme_maxcine(titulo):
-    try:
-        url_pesquisa = f"https://wix.maxcine.top/public/pesquisa-em-tempo-real?search={titulo}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-
-        response = requests.get(url_pesquisa, headers=headers)
-        if response.status_code != 200:
-            return None, f"Erro na pesquisa do filme, status: {response.status_code}"
-
-        soup = BeautifulSoup(response.content, 'html.parser')
-        link_pagina_filme = None
-        for link in soup.find_all('a', href=True):
-            if "/public/filme/" in link['href']:
-                link_pagina_filme = link['href']
-                break
-
-        if not link_pagina_filme:
-            return None, "Filme não encontrado no site principal"
-
-        url_pagina_filme = f"https://wix.maxcine.top{link_pagina_filme}" if link_pagina_filme.startswith('/') else link_pagina_filme
-
-        return url_pagina_filme, None
-    
-    except Exception as e:
-        return None, f"Erro inesperado: {str(e)}\n{traceback.format_exc()}"
-
-# Função para buscar URL da página do filme no Visioncine (site secundário)
+# Função para buscar URL da página do filme no Visioncine (site secundário) com sessão e cookies
 def buscar_url_pagina_filme_visioncine(titulo):
     try:
         url_pesquisa = f"https://www.visioncine-1.com.br/search.php?q={titulo}"
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.5",
@@ -48,8 +19,12 @@ def buscar_url_pagina_filme_visioncine(titulo):
             "TE": "Trailers"
         }
 
-        # Faz a requisição de pesquisa no Visioncine
-        response = requests.get(url_pesquisa, headers=headers)
+        # Usando uma sessão para manter os cookies
+        session = requests.Session()
+        session.headers.update(headers)
+
+        # Fazendo a requisição para o site secundário
+        response = session.get(url_pesquisa)
         if response.status_code != 200:
             return None, f"Erro na pesquisa do filme no Visioncine, status: {response.status_code}"
 
